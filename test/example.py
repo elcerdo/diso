@@ -25,23 +25,15 @@ class CapsuleSDF:
         delta = torch.tensor([self.radius, self.radius, self.half_height + self.radius])
         self.aabb = torch.stack([center - delta, center + delta], dim=-1)
 
-    def __call__(self, points_):
-        points = torch.abs(points_ - self.center)
-        # xys = points[:, :, :, :2]
-        # zzs = points[:, :, :, 2]
-        # selection = zzs > self.height
-        # print("$$$", selection.shape, selection.dtype, xys.shape, zzs.shape)
+    def __call__(self, points__):
+        points = torch.abs(points__ - self.center)
+        points_ = points[:, :, :, :2]
+        elevations_ = points[:, :, :, 2]
         dists = torch.norm(points - torch.tensor([0, 0, self.half_height]), dim=-1)
-        # dists = (
-        #     torch.select(
-        #         selection,
-        #         torch.norm(xys, dim=-1),
-        #         torch.norm(points - torch.tensor([0, 0, self.height]), dim=-1),
-        #     )
-        #     - self.radius
-        # )
-        print("!!!", points.shape, dists.shape)
-        return dists - self.radius
+        dists_ = torch.norm(points_, dim=-1)
+        dists__ = torch.where(elevations_ > self.half_height, dists, dists_)
+        print("!!!", points__.shape, dists__.shape)
+        return dists__ - self.radius
 
 
 os.makedirs("out", exist_ok=True)
