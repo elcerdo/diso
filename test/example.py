@@ -36,6 +36,22 @@ class CapsuleSDF:
         return dists__ - self.radius
 
 
+class UnionSDF:
+    def __init__(self, shape_aa, shape_bb):
+        self.shape_aa = shape_aa
+        self.shape_bb = shape_bb
+        print("!!!!", shape_aa.aabb, shape_bb.aabb)
+        self.aabb = torch.zeros_like(shape_aa.aabb)
+        assert self.aabb.shape == (3, 2)
+        self.aabb[:, 0] = torch.minimum(shape_aa.aabb[:, 0], shape_bb.aabb[:, 0])
+        self.aabb[:, 1] = torch.maximum(shape_aa.aabb[:, 1], shape_bb.aabb[:, 1])
+
+    def __call__(self, points):
+        dists_aa = self.shape_aa(points)
+        dists_bb = self.shape_bb(points)
+        return torch.minimum(dists_aa, dists_bb)
+
+
 os.makedirs("out", exist_ok=True)
 
 # define a sphere
@@ -44,8 +60,9 @@ s_y = 0.0
 s_z = 0.0
 radius = 0.5
 height = 1.5
-# sphere = SphereSDF(torch.tensor([s_x, s_y, s_z]), radius)
-shape = CapsuleSDF(torch.tensor([s_x, s_y, s_z]), radius, height)
+shape_sphere = SphereSDF(torch.tensor([s_x, s_y, s_z]), radius * 1.5)
+shape_capsule = CapsuleSDF(torch.tensor([s_x, s_y, s_z]), radius, height)
+shape = UnionSDF(shape_sphere, shape_capsule)
 
 # create the iso-surface extractor
 diffmc = DiffMC(dtype=torch.float32).cuda()
